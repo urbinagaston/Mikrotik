@@ -1,0 +1,49 @@
+# La Culpa de Sistemas
+# laculpadesistemas.com
+# Copias de seguridad a FTP externo de backup y de export 
+# version de 01/04/2019
+#
+# Realiza una copia en local a la hora programada al script
+# ejecuta las 3 opciones: Backup, export y export compact
+# sube la copia a un FTP externo
+# borra ficheros locales
+# especificar dirección del servidor, usuario, contraseña y ruta dentro del ftp
+:local direccion1 ("172.27.1.10")
+:local user1 ("")
+:local pass1 ("")
+:local ParamRuta ("/pruebaRaid/RoutersMkt/")
+# Cogemos la hora y formateamos
+:local ts [/system clock get time]
+:set ts ([:pick $ts 0 2].[:pick $ts 3 5].[:pick $ts 6 8])
+# Cogemos la fecha  y formateamos
+:local ds [/system clock get date]
+:set ds ([:pick $ds 7 11].[:pick $ds 0 3].[:pick $ds 4 6])
+# Generamos el nombre de los ficheros añadiendo FTP delante para su borrado posterior. 
+:local FBackup ("/FTP-".[/system identity get name]."-".$ds."-".$ts.".backup")
+:local FExport ("/FTP-".[/system identity get name]."-".$ds."-".$ts.".export.rsc")
+:local FExportCompact ("/FTP-".[/system identity get name]."-".$ds."-".$ts.".exportcomp.rsc")
+# Generamos el nombre de los ficheros añadiendo la ruta destino para subirlos
+:local DestinoFBackup ($ParamRuta.$FBackup)
+:local DestinoFExportTXT ($ParamRuta.$FExport.".txt")
+:local DestinoFExportCompactTXT ($ParamRuta.$FExportCompact.".txt")
+# realizamos las copias locales
+/system backup save name=$FBackup
+/export file=$FExport
+/export compact file=$FExportCompact
+# Logueamos en el system Log que el backup local se ha realizado correctamente
+:log info message="Copia local del sistema realizada correctamente";
+# Subimos al FTP la copia del backup local
+/tool fetch address=$direccion1 src-path=$FBackup user=$user1 mode=ftp password=$pass1 dst-path=$DestinoFBackup upload=yes
+:log info message="$FBackup FTP Upload ok";
+# Subimos al FTP la copia del export local
+/tool fetch address=$direccion1 src-path=$FExport user=$user1 mode=ftp password=$pass1 dst-path=$DestinoFExportTXT upload=yes
+:log info message="$DestinoFExportTXT FTP Upload ok";
+# Subimos al FTP la copia del export local compact
+/tool fetch address=$direccion1 src-path=$FExportCompact user=$user1 mode=ftp password=$pass1 dst-path=$DestinoFExportCompactTXT upload=yes
+:log info message="$DestinoFExportCompactTXT FTP Upload ok";
+# Por seguridad para borrar los ficheros esperamos unos segundos
+:delay 20s;
+# Encuentra todo lo que empiece por FTP- y lo borra del directorio local
+:foreach i in=[/file find] do={:if ([:typeof [:find [/file get $i name] "FTP-"]]!="nil") do={/file remove $i}}
+# Log que todo ha finalizado
+:log info message="Copia finalizada OK";
