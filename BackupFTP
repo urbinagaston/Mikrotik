@@ -1,0 +1,22 @@
+:local server "172.27.1.10"; # IP DEL SERVIDOR FTP
+:local port 21; # PUERTO DEL FTP
+:local user "anonimus"; # USUARIO DEL FTP
+:local password ""; # CONTRASEÑA DEL FTP
+:local carpeta "/pruebaRaid/RoutersMkt/"; #CARPETA DONDE GUARDAR LOS BACKUPS
+
+#### Si activamos el historico sube los ficheros con la fecha del dia que se genero
+:local historico 1;
+
+:local nombrefichero;
+:local systemid;
+
+:set systemid [/system identity get name];
+
+/system backup save name=$systemid
+/export file=$systemid
+
+:if ($historico = "1") do={
+:set nombrefichero ([/system identity get name]."_".[:pick [/system clock get date] 4 6].[:pick [/system clock get date] 0 3].[:pick [/system clock get date] 7 11])
+
+/tool fetch mode=ftp address=$server src-path=($systemid.".rsc") dst-path="$carpeta/$nombrefichero.rsc" user=$user port=$port password=$password upload=yes keep-result=no
+/tool fetch mode=ftp address=$server src-path=($systemid.".backup") dst-path="$carpeta/$nombrefichero.backup" user=$user port=$port password=$password upload=yes keep-result=no
