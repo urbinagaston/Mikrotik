@@ -1,0 +1,17 @@
+######
+######         Script para el envio de Backups del Mikrotik
+######         genera un Backup y un Export del sistema y lo
+######         envia a la direccion indicada en correo.
+######
+######                     
+######
+
+
+:local correo "MICORREO@GMAIL.COM";
+
+/system backup save name=[/system identity get name];
+/export file=[/system identity get name];
+log info "Enviando correos de backup"
+
+/tool e-mail send to=$correo subject=([/system identity get name]." Backup\") body=("Backup generado con la version ".[/system package update get installed-version]." instalada. Es te backup solo se podra recuperar sobre esa misma version. Y solo es valido para este Mikrotik, Modelo ".[/system resource get board-name]) file=([/system identity get name].".backup");
+/tool e-mail send to=$correo subject=([/system identity get name]." RSC Export") body=("Export generado sobre la configuracion del Router. Puedes usarlo para cualquier router y version, aunque puede cambien algunas cosas como interfaces o caracteristicas.") file=([/system identity get name].".rsc\");
